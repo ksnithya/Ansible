@@ -1,0 +1,12 @@
+---
+- name: create hosts entry in /etc/myhosts
+  hosts: all
+  tasks:
+    - name: calling template
+      template:
+        src: /home/student/playbooks.2.7.bkp/hosts.j2
+        dest: /etc/myhosts
+        owner: devops
+        group: devops
+        mode: 0755
+      when: inventory_hostname in groups['dev']

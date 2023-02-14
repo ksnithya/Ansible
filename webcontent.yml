@@ -1,0 +1,23 @@
+---
+- name: create link file
+  hosts: all
+  tasks:
+  - name: create /devweb
+    file:
+      path: /devweb
+      state: directory
+
+  - name: create file
+    file:
+      path: /devweb/index.html
+      state: touch
+      owner: devops
+      group: devops
+      mode: 0755
+
+  - name: create link
+    file:
+      src: /devweb/index.html
+      dest: /var/www/html/index.html
+      state: link
+

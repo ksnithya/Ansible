@@ -1,0 +1,10 @@
+---  
+- name: webservers
+  hosts: webservers
+  roles:
+    - phpinfo
+     
+- name: lb creation
+  hosts: balancer
+  roles:
+    - balancer

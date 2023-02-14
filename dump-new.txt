@@ -1,0 +1,713 @@
+
+Instructions:
+
+* root password for greg is 'thuctive' and same password for all nodes
+* Greg's password is 'thuctive'
+* All playbooks should be executed using greg user.
+* Create a directory 'ansible' under the path /home/greg
+* greg user should own this ansible directory
+* Create a static inventory named 'inventory'
+* ansible.cfg file should be pointed with inventory, roles path [/home/greg/ansible/roles]
+* While creating inventory, webservers group should contain prod group
+
+========
+
+Q1)
+Cretate inventory file with below content
+[dev]
+node1.realmX.example.com
+
+[test]
+node2.realmX.example.com
+
+[prod]
+node3.realmX.example.com
+node4.realmX.example.com
+
+[balancer]
+node5.realmX.example.com
+
+[webservers:children]
+prod
+
+cd /home/devops
+Cretae below file .vimrc to settab space and pointer in vim editor
+vim .vimrc
+set ai
+set tabstop=2
+set expandtab
+set cursorcolumn
+
+mkdir ansible
+cd ansible
+vim inventory
+[dev]
+node1.realmX.example.com
+
+[test]
+node2.realmX.example.com
+
+[prod]
+node3.realmX.example.com
+node4.realmX.example.com
+
+[balancer]
+node5.realmX.example.com
+
+[webservers:children]
+prod
+
+Crete ansible.cfg file
+vim ansible.cfg
+[defaults]
+inventory = ./inventory
+remote_user = devops
+ask_pass = false
+roles_path = /home/devops/ansible/roles:/usr/share/ansible/roles
+[privilege_escalation]
+become = true
+become_method = sudo
+become_user = root
+become_ask_pass = false
+
+==========================
+Q2)
+
+* Ansible Install (on Master node)
+
+greg $ sudo yum install ansible -y 
+
+=========================
+Q3)
+
+Adhoc script
+
+* Create an adhoc.sh script to configure yum repository on all 
+  the nodes; 
+  URL is available in http://content.example.com/yum/repository
+ 
+cat /adhoc.sh
+ansible all -m yum_repository -a 'name=ex407-yum description="test description" baseurl=http://content.example.com/rhel7.6/x86_64/dvd/ gpgcheck=yes enabled=yes state=present gpgkey=http://content.example.com/rhel7.6/x86_64/dvd/RPM-GPG-KEY-redhat-release'
+
+ansible all -m rpm_key -a "state=present key=http://content.example.com/rhel7.6/x86_64/dvd/RPM-GPG-KEY-redhat-release"
+
+
+#chmod 755 adhoc.sh
+#./adhoc.sh
+ 
+===========================
+
+Q4)
+* Download roles using galaxy. Two links will be provided 
+
+  create a folder 'roles' in current path
+  create an extraction file named 'requirements.yml' inside roles folder
+
+Answer:
+  vim requirements.yml
+ 
+  - src: link 
+    name: balancer
+  - src: link
+    name: phpinfo
+
+# ansible-galaxy install -r roles/requirements.yml -p roles 
+
+
+==========================
+Q)
+Using balancer group;
+  A play should be created using role balancer and php
+  The load should be balanced across two servers
+  Each time when you reload the web page, the display should be "Welcome <hostname> on <IP>
+ 
+ - When we include the roles balancer and php, the actual balancer config might have done.  - webURL is given on question. 
+
+
+
+[student@workstation ansible]$ cat roles.yml 
+- name: user role1
+  hosts: webservers
+  roles:
+    - phpinfo
+
+- name: user role2
+  hosts: balancer
+  roles:
+    - balancer
+       
+[student@workstation ansible]$ 
+
+
+
+Q)
+Download the hostfile host.j2 from the link and complete the template so that it creates and entry in dev group - 
+Note: Content on host.j2 should be as below
+192.168.0.10 node1.realmX.example.com node1
+192.168.0.11 node2.realmX.example.com node2
+192.168.0.12 node3.realmX.example.com node3
+192.168.0.13 node4.realmX.example.com node4
+192.168.0.14 node5.realmX.example.com node5
+192.168.0.15 node6.realmX.example.com node6
+
+Download the template from link and edit is as below.
+[devops@ansible ansible]$ cat hosts.j2
+{% for i in groups['all'] %}
+{{ hostvars[i]['ansible_facts']['default_ipv4']['address'] }} {{ hostvars[i]['ansible_facts']['fqdn'] }} {{ hostvars[i]['ansible_facts']['hostname'] }}
+{% endfor %}
+
+Then write the below playbook to copy to dev server
+
+[devops@ansible ansible]$ cat myhosts.yml
+---
+- name: copy content using template
+  hosts:  all
+  tasks:
+    - name: copy using template
+      template:
+        src:  hosts.j2
+        dest: /etc/myhost
+      when: inventory_hostname in groups['dev']
+[devops@ansible ansible]$
+===========================
+Q5)
+* Asked to install httpd, firewalld, start services, enable firewall service for httpd in dev and test group
+* Create a playbook to install httpd and firewall
+  wget to download the template to /home/greg/ansible folder
+* cd to roles and execute "ansible-galaxy init apache"
+* Move the template file to the apache folder. 
+  "mv -v template.j2 roles/apache/templates/"
+* Edit the template and append a new line without diturbing the exisiting lines. 
+  {{ ansible_hostname }} {{ ansible_default_ipv4['address'] }}
+* Install httpd, firewalld, start services, enable the httpd service in firewall. 
+* Refer book - 
+
+Answer:
+
+update role_path update in ansible.cfg
+
+# pwd
+/home/greg/ansible/roles
+
+# ansible-galaxy init apache
+
+# cat apache_role.yml
+- name: apache deploy
+  hosts: dev, test
+  roles:
+    - apache
+
+vi template.j2
+This is an existing content - template.j2
+{{ ansible_hostname }} {{ ansible_default_ipv4['address'] }}
+
+mv template.j2 roles/apache/templates/
+
+Role:
+
+[devops@ansible ansible]$ cd roles/
+[devops@ansible roles]$ tree apache
+apache
+??? defaults
+?   ??? main.yml
+??? files
+??? handlers
+?   ??? main.yml
+??? meta
+?   ??? main.yml
+??? README.md
+??? tasks
+?   ??? main.yml
+??? templates
+?   ??? template.j2
+??? tests
+?   ??? inventory
+?   ??? test.yml
+??? vars
+    ??? main.yml
+
+8 directories, 9 files
+[devops@ansible roles]$
+
+Then goto cd apache/tasks and edit main.yml file as below
+
+[devops@ansible roles]$ cd apache/
+[devops@ansible apache]$ cd tasks/
+[devops@ansible tasks]$ cat main.yml
+---
+# tasks file for apache
+- name: install httpd and firewalld
+  yum:
+    name:
+      - httpd
+      - firewalld
+    state: latest
+- name: enable services
+  service:
+    name: "{{item}}"
+    state:  started
+    enabled: yes
+  loop:
+    - httpd
+    - firewalld
+- name: enabled firewalld
+  firewalld:
+    immediate: yes
+    permanent: true
+    service: http
+    state: enabled
+- name: copy template
+  template:
+    src: template.j2
+    dest: /var/www/html/index.html
+[devops@ansible tasks]$
+
+Then check the content of template.j2 file under template directory
+
+[devops@ansible apache]$ cd templates/
+[devops@ansible templates]$ cat template.j2
+This is an existing content - template.j2
+{{ ansible_hostname }} {{ ansible_default_ipv4['address'] }}
+
+[devops@ansible templates]$
+
+
+===========================
+Q6) Refer - page 317
+* Create a playbook to use system roles (timesync). Also enable provider
+* Note the variables will be provided in exam 
+  hostname=0.rhel.pool.ntp.org
+  
+
+Answer:
+  $ sudo yum-config-manager --enable rhel-7-server-extras-rpms
+  $ sudo yum install rhel-system-roles
+  $ ansible-galaxy list 
+
+  $ cd /usr/share/ansible/roles/rhel-system-roles.timesync
+    check the contents
+
+[devops@ansible ansible]$ cat configure_time.yml
+---
+- name: time sync
+  hosts:  all
+  vars:
+    timesync_ntp_servers:
+      - hostname: 172.25.254.254
+        iburst: yes
+    timesync_ntp_provider: chrony
+  roles:
+    - /usr/share/ansible/roles/rhel-system-roles.timesync
+[devops@ansible ansible]$
+
+
+For the above play use the below document as reference - Page 319
+  $ cat /usr/share/doc/rhel-system-roles-1.0/timesync/README.md
+   where you can see variable names. 
+   timesync_ntp_servers: 
+     - hostname: ipaddress (in exam you will get ipaddress)
+       iburst: yes
+
+========================
+
+Q7)
+
+Q8)
+* Vault
+  Create an encrypted file named vault.yml 
+  Password to encrypt the file should be kept as "P@ssw0rd"
+  Save the "P@ssw0rd" in the file named "secret.txt" in currentpath  Inside vault.yml, store the variable names like below; 
+  
+ pw_manager: Iammgr
+ pw_developer: Iamdev
+
+  Note: this variable file should be accessed from anywhere in this exam. Check the /etc/ansible/ansible.cfg | grep vault_password_file
+
+Create sectet.txt file 
+[devops@ansible ansible]$ cat secret.txt
+P@ssw0rd
+[devops@ansible ansible]$
+
+Then create encypt vault.yml file using below command
+
+[devops@ansible ansible]$ ansible-vault create --vault-password-file=secret.txt vault.yml
+Enter the below content
+pw_manager: Iammgr
+ pw_developer: Iamdev
+[devops@ansible ansible]$
+
+Then view the vault.yml file
+
+[devops@ansible ansible]$ ansible-vault view --vault-password-file=secret.txt vault.yml
+pw_manager: Iammgr
+pw_developer: Iamdev
+[devops@ansible ansible]$
+
+Note: this variable file should be accessed from anywhere in this exam. Check the /etc/ansible/ansible.cfg | grep vault_password_file
+
+Then add the entry /home/devops/ansible/secret.txt in ansible.cfg
+
+under /home/devops/ansible/ansible.cfg check for the entry "vault_password_file" 
+
+[devops@ansible ansible]$ vim /home/devops/ansible/ansible.cfg
+vault_password_file = /home/devops/ansible/secret.txt
+
+[devops@ansible ansible]$ ansible-vault view vault.yml
+It wont ask password
+=============================
+Q9)
+
+* Create packages.yml playbook
+  Install php and mariadb
+  Install 'Development Tools'
+  Update all packages to the latest 
+
+Answer:
+ 
+ [devops@ansible ansible]$ cat package.yml
+---
+- name: install php and maria
+  hosts:  all
+  tasks:
+    - name: install package
+      yum:
+        name: "{{item}}"
+        state: present
+      when: inventory_hostname in groups['dev']
+      loop:
+        - php
+        - mariadb
+    - name: group install
+      yum:
+        name: '@Development Tools'
+        state: present
+      when: inventory_hostname in groups['prod']
+    - name: update
+      yum:
+        name: '*'
+        state:  latest
+      when: inventory_hostname in groups['dev']
+[devops@ansible ansible]$
+
+=============================
+Q10)
+Create a directory /devweb and give group permission as devops and set gid to group.
+Create link as below on dev group.
+/var/www/html/webdev -> /webdev/index.html
+Copy the content 'Development" to /devweb/index.html
+  
+Answers:
+[devops@ansible ansible]$ cat webcontent.yml
+---
+- name: file creation and link
+  hosts:  dev
+  tasks:
+    - name: directory creation
+      file:
+        path:  /webdev
+        state:  directory
+        group:  devops
+        mode:  u=rwx,g=rwx,o=rx,g+s
+        recurse:  yes
+        setype:  httpd_sys_content_t
+    - name:	copy content
+      copy:
+        content:  Development server
+        dest:  /webdev/index.html
+        setype: httpd_sys_content_t
+      when:	inventory_hostname in groups['dev']
+    - name:  link file
+      file:
+        src:  /webdev
+        dest:  /var/www/html/webdev
+        state:  link
+
+==============================
+
+Q11)
+* Create user account on managed nodes (users.yml) as below
+create user list as below.
+ Below is the content on user_list.yml
+users:
+  - name: user1
+    job: developer
+  - name: user2
+    job: manager
+  - name: user3
+    job: developer
+Developer job user:
+Developer job users should be exist on dev or prod group servers and their secondary group contains "devops" group
+Manager job user:
+Manager job users should exist on test group servers and their secondary group contains "manager" group.
+
+  Note: Q8 contains the password details. Password should be hashed using SHA512 
+
+[devops@ansible ansible]$ cat user.yml
+---
+- name: user.yml
+  hosts:  all
+  vars_files:
+    - users_list.yml
+    - vault.yml
+  tasks:
+    - name: group creation
+      group:
+        name: devops
+        state:  present
+      when: inventory_hostname in groups['dev'] or inventory_hostname in groups['prod']
+    - name: group creation
+      group:
+        name: manager
+        state:  present
+      when: inventory_hostname in groups['test']
+    - name: user creation
+      user:
+        name: "{{item.name}}"
+        state:  present
+        groups: devops
+        password: "{{pw_developer|password_hash('sha512')}}"
+      loop:
+        "{{users}}"
+      when: item.job == "developer" and (inventory_hostname in groups['dev'] or inventory_hostname in groups['prod'])
+    - name: user creation
+      user:
+        name: "{{item.name}}"
+        state:  present
+        groups:  manager
+        password: "{{pw_manager|password_hash('sha512')}}"
+      loop:
+        "{{users}}"
+      when: item.job == "manager" and (inventory_hostname in groups['test'])
+
+====================
+Q12)
+
+ * Create hardware report 
+   Using get_url module to download the report to /etc/hwreport.txt
+   The format will be like as below;
+  
+   MEMORY=<value or none>
+   BIOS=<value or none>
+   VDA_DISK_SIZE=<value or none>
+   DISK_SIZE_VDB=<value or none>
+ 
+   Note:  If the item doesn't exists then make the value as "None". 
+cat hwreport.yml
+Note: you can ignore debug task if you dont want to see what is the data stored in set_fact variable
+---
+- name: hwreport
+  hosts:  all
+  ignore_errors:  yes
+  tasks:
+    - name: download file from link using url_get
+      get_url:
+         src: link
+         dest: /etc/hwreport.txt
+    - name: create setfact
+      set_fact:
+        Host: "{{ansible_hostname}}"
+    - name: create setfact
+      set_fact:
+        Mem:  "{{ansible_memtotal_mb}}"
+    - name: create setfact
+      set_fact:
+        Bios:  "{{ansible_bios_version}}"
+    - name: create setfact
+      set_fact:
+        SDA:  "{{ansible_devices['sda']['size']}}"
+    - name: create setfact
+      set_fact:
+        SDB:  "{{ansible_devices['sdb']['size']}}"
+    - name: copy content
+      copy:
+        content:  |
+          HOST: "{{Host|default('NONE')}}"
+          MEMORY: "{{Mem|default('NONE')}}"
+          BIOS: "{{Bios|default('NONE')}}"
+          SDA_DISK_SIZE: "{{SDA|default('NONE')}}"
+          SDB_DISK_SIZE: "{{SDB|default('NONE')}}"
+        dest: /etc/hwreport.txt
+
+==========================
+Q13)
+
+* Rekey 
+* Download a file from the link and save as local.yml. current password in "test" and new password is "welcome"
+  $wget http://content.example.com./  -O local.yml
+  $ansible-vault rekey local.yml
+   - they have given current password - change to new one
+solution:
+save current password in old.txt
+cat old.txt
+test
+
+Save new password in new.txt
+cat new.txt
+welcome
+
+Now rekey.
+ansible-vault rekey --vault-password-file=old.txt --new-vault-password-file=new.txt test.yml
+
+To check:
+ansible-vault --ask-vault-pass local.yml - it will prompt for vault password. Old password wont work. Only new password will work.
+Vault password:
+welcome
+  
+==========================
+Q14)
+
+* create a playbook 
+  Replace the contents of the file /etc/issue on particular host group (test, prod, dev)
+  Replace with ansible_fqdn ansible_ipv4.address ansible_hostname
+  Note: the answer would have 2 lines on /etc/issue file
+
+
+[devops@ansible ansible]$ cat issue.yml
+---
+- name: copy content
+  hosts:  all
+  tasks:
+    - name: copy to dev server
+      copy:
+        content:  |
+          This is Developmenet server
+          {{ansible_hostname}} {{ansible_fqdn}}
+        dest: /etc/issue
+      when: inventory_hostname in groups['dev']
+    - name: copy to test server
+      copy:
+        content:  |
+          This is test server
+          {{ansible_hostname}} {{ansible_fqdn}}
+        dest: /etc/issue
+      when: inventory_hostname in groups['test']
+    - name: copy to prod server
+      copy:
+        content:  |
+          This is production server
+          {{ansible_hostname}} {{ansible_fqdn}}
+        dest: /etc/issue
+      when: inventory_hostname in groups['prod']
+
+=========================== 
+Q15)
+* Create partition using playbook - partition.yml
+  size=1500MiB
+  disk=vdb
+  MountPath=/test 
+  FS type = ext2
+  Note: If device is not available on any  node, it should display  "Disk not available"
+  Note: While partitioning, if failed, display "Insufficient disk size"
+  Note: While partitioning failed for 1500MiB, create partition with 800MiB
+
+---
+- name: create partion
+  hosts:  all
+  ignore_errors: yes
+  tasks:
+    - name: getting disk info
+      parted:
+        device: /dev/sda
+        state:  info
+      register: diskinfo
+    - name: disk not available msg
+      debug:
+        msg:  "Disk not available"
+      when: diskinfo is failed
+    - name: partition 1500MG
+      parted:
+        device: /dev/sda
+        number: 1
+        part_start: 1MiB
+        part_end: 1500MiB
+        state:  present
+      when: diskinfo is success
+      register: diskpart
+    - name: error msg
+      debug:
+        msg:  "Insufficient space"
+      when: diskinfo is success and diskpart is failed
+    - name: partition 800MiB
+      parted:
+        device: /dev/sda
+        number: 1
+        part_start: 1MiB
+        part_end: 800MiB
+        state:  present
+      when: diskpart is failed and diskinfo is success
+      register:  part800
+    - name: filesystem creation
+      filesystem:
+        dev:  /dev/sda1
+        fstype: ext3
+        force:  yes
+      when:	diskpart is success or part800 is success
+      register:  fs
+    - name: mount fs
+      mount:
+        src:  /dev/sda1
+        path: /part-doc
+        fstype: ext3
+        state:  mounted
+     when:  fs is success and (diskpart is success or part800 is success) 
+
+------------------------------------------------------
+Q16)
+* Create partition using playbook - lv.yml
+1. Create Logical volume "data" under "research" volume group on all managed host
+2. Formate the LV as ext3
+3. Mount it as /data on dev group servers alone.
+  Note: If VG is not available on any  node, it should display  "VG not available"
+  Note: while creating data lv if it fails on 1500MB . It should display "Insufficient disk size"
+  Note: While data lv  failed for 1500MiB, create LV with 800MiB
+
+[devops@ansible ansible]$ cat vg-lv.yml
+---
+- name: create LV and mount on dev servers
+  hosts:  all
+  ignore_errors:  yes
+  tasks:
+    - name: check vg exist
+      lvg:
+        vg: research
+        pvs:  /dev/vdb
+      register: vginfo
+    - name: debug
+      debug:
+        msg:  "VG not exist"
+      when: vginfo is failed
+    - name: create lv
+      lvol:
+        vg: research
+        lv: data
+        size: 1500
+        state:  present
+      when: vginfo is success
+      register: lv1500
+    - name: debug
+      debug:
+        msg:  "LV not created. Space not available"
+      when: lv1500 is failed and vginfo is success
+    - name: create 800MB lv
+      lvol:
+        vg: research
+        lv: data
+        size: 800
+        state:  present
+      when: vginfo is success and lv1500 is failed
+      register: lv800
+    - name: filesystem creation
+      filesystem:
+        dev:  /dev/research/data
+        fstype: ext3
+        force:  yes
+      when: vginfo is success and (lv1500 is success or lv800 is success)
+      register: fs
+    - name: mounted
+      mount:
+        src: /dev/research/data
+        path: /data
+        fstype: ext3
+        state:  mounted
+      when: inventory_hostname in groups['dev'] and fs is success
+[devops@ansible ansible]$

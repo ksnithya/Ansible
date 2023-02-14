@@ -1,0 +1,30 @@
+---
+- name: hwreport.yml
+  hosts: servera.lab.example.com
+  ignore_errors: yes
+  tasks:
+  - name: setting facts
+    set_fact:
+      memory: "{{ ansible_memtotal_mb }}"
+      bios: "{{ ansible_bios_version }}"
+      vda_disk_size: "{{ ansible_devices['vda']['size'] }}"
+
+  - name: setting facts
+    set_fact:
+      vdb_disk_size: "{{ ansible_devices['vdb']['size'] }}"
+
+  - name: copying report
+    copy:
+      content: |  
+        memory: "{{ memory | default('none') }}"
+        bios: "{{ bios | default('None') }}"
+        vda_disk_size: "{{ vda_disk_size | default('None') }}"
+        vdb_disk_size: "{{ vdb_disk_size | default('None') }}"
+      dest: /etc/hwreport.txt
+
+  - name: fetch hw report to control host
+    fetch:
+      src: /etc/hwreport.txt
+      dest: /etc/hwreport
+      flat: no
+

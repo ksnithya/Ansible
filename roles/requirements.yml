@@ -1,0 +1,4 @@
+  - src: http://materials.example.com/docs/ 
+    name: balancer
+  - src: link
+    name: phpinfo

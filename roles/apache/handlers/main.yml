@@ -1,0 +1,8 @@
+- name: apache_restart
+  service:
+    name: "{{ item }}"
+    state: restarted
+    enabled: yes
+  loop:
+    - httpd
+    - firewalld

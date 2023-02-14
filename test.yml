@@ -1,0 +1,6 @@
+- name: test
+  hosts: servera.lab.example.com
+  tasks:
+  - name:
+    debug:
+      msg: hostvars['host']['ansible_facts']['default_ipv4']['address']

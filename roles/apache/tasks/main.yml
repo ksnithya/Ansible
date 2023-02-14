@@ -1,0 +1,30 @@
+- name: install package
+  yum:
+    name:
+      - httpd
+      - firewalld
+    state: latest
+
+- name: enable services
+  service: 
+    name: httpd
+    enabled: yes
+ 
+- name: enable firewalld
+  firewalld:
+    immediate: yes
+    permanent: true
+    service: http
+    state: enabled
+
+- name: calling template
+  template:
+    src: template.j2
+    dest: /var/www/html/index.html
+    owner: root
+    group: root
+    mode: 0644
+  notify:
+    - apache_restart
+
+

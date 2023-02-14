@@ -1,0 +1,13 @@
+---
+- name: timesync yml
+  hosts: servera.lab.example.com
+  vars:
+    timesync_ntp_servers:
+      #- hostname: 0.rhel.pool.ntp.org
+      - hostname: 172.25.254.254
+        iburst: yes
+#    timesync_ntp_provider: chrony
+  roles:
+    - /usr/share/ansible/roles/rhel-system-roles.timesync
+
+

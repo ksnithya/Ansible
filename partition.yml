@@ -1,0 +1,54 @@
+---
+- name: partition
+  hosts: serverc.lab.example.com
+  ignore_errors: yes
+  tasks:
+  - name: getting disk infor
+    parted:
+      device: /dev/vdb
+      state: info
+    register: diskinfo
+
+  - name: disk not available msg
+    debug:
+      msg: "Disk is not available"
+    when: diskinfo is failed
+    
+  - name: partition 1500MiB
+    parted:
+      device: /dev/vdb
+      number: 1
+      part_start: 1MiB
+      part_end: 1500MiB
+      state: present
+    when: diskinfo is success
+    register: diskpart
+
+  - name: insufficient error msg
+    debug:
+      msg: "insufficient disk space"
+    when: diskinfo is success and diskpart is failed
+
+  - name: partition 800MiB
+    parted:
+      device: /dev/vdb
+      number: 1
+      part_start: 1MiB
+      part_end: 800MiB
+      state: present
+    when: diskinfo is success and diskpart is failed
+
+  - name: create filesystem
+    filesystem:
+      dev: /dev/vdb1
+      fstype: ext4
+      force: yes
+
+  - name: mount fs
+    mount:
+      src: /dev/vdb1
+      path: /part-doc
+      fstype: ext4
+      state: mounted
+
+

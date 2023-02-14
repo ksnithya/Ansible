@@ -1,0 +1,25 @@
+---
+- name: install php and maria
+  hosts: all
+  tasks:
+  - name: php and maria
+    yum:
+      name: "{{ item }}"
+      state: present
+    loop:
+      - php
+      - mariadb
+    when: inventory_hostname in groups['dev']
+
+  - name: development tools
+    yum:
+      name: "@Development Tools"
+      state: present
+    when: inventory_hostname in groups['prod']
+
+  - name: update
+    yum:
+      name: '*'
+      state: latest
+    when: inventory_hostname in groups['dev']
+

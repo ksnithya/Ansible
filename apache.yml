@@ -1,0 +1,5 @@
+---
+- name: apache.yml
+  hosts: webservers
+  roles:
+    - apache
